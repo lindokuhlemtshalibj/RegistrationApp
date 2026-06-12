@@ -1,9 +1,13 @@
 package registrationapp;
 
-// I am importing the Scanner class so I can read input from the user
 import java.util.Scanner;
 
-// I am creating the main RegistrationApp class that will run the program
+/**
+ * Main application class for QuickChat.
+ * Part 3 additions: 4th main menu option "Stored Messages" with sub-menu (a-f).
+ *
+ * @author Lindokuhle Mtshali
+ */
 public class RegistrationApp {
 
     public static void main(String[] args) {
@@ -35,7 +39,6 @@ public class RegistrationApp {
 
         String registrationResult = myLogin.registerUser();
         System.out.println(registrationResult);
-
         System.out.println();
 
         if (myLogin.checkUserName() && myLogin.checkPasswordComplexity() && myLogin.checkCellPhoneNumber()) {
@@ -53,31 +56,34 @@ public class RegistrationApp {
             String loginResult = myLogin.returnLoginStatus(loginUsername, loginPassword);
             System.out.println(loginResult);
 
-            // Only enter QuickChat if login was successful
             if (myLogin.loginUser(loginUsername, loginPassword)) {
 
                 System.out.println();
                 System.out.println("Welcome to QuickChat.");
                 System.out.println();
 
-                // Ask how many messages the user wants to send
+                // Sender display name for stored messages report
+                String senderDisplay = firstName + " " + lastName;
+
                 System.out.println("How many messages would you like to send?");
                 int numMessages = Integer.parseInt(input.nextLine().trim());
 
                 int menuChoice = 0;
 
-                // Keep running until user selects Quit (3)
                 do {
                     System.out.println();
-                    System.out.println("--- Menu ---");
+                    System.out.println("--- Main Menu ---");
                     System.out.println("1) Send Messages");
                     System.out.println("2) Show recently sent messages");
-                    System.out.println("3) Quit");
+                    System.out.println("3) Stored Messages");    // Part 3 - new 4th option
+                    System.out.println("4) Quit");
                     System.out.print("Enter your choice: ");
                     menuChoice = Integer.parseInt(input.nextLine().trim());
 
+                    // --------------------------------------------------------
+                    // Option 1: Send Messages
+                    // --------------------------------------------------------
                     if (menuChoice == 1) {
-                        // Loop for the number of messages the user specified
                         for (int i = 1; i <= numMessages; i++) {
                             System.out.println("\n--- Message " + i + " of " + numMessages + " ---");
 
@@ -87,29 +93,22 @@ public class RegistrationApp {
                             System.out.println("Enter your message (max 250 characters): ");
                             String messageText = input.nextLine();
 
-                            // Create the Message object
                             Message msg = new Message(i, recipient, messageText);
 
-                            // Validate recipient
                             System.out.println(msg.checkRecipientCell());
-
-                            // Validate message length
                             String lengthCheck = msg.checkMessageLength();
                             System.out.println(lengthCheck);
 
-                            // Only proceed if both checks pass
-                            if (!msg.checkRecipientCell().equals("Cell phone number successfully captured.") ||
-                                !lengthCheck.equals("Message ready to send.")) {
+                            if (!msg.checkRecipientCell().equals("Cell phone number successfully captured.")
+                                    || !lengthCheck.equals("Message ready to send.")) {
                                 System.out.println("Message not sent due to validation errors. Please try again.");
-                                i--; // Don't count this as a successful message entry
+                                i--;
                                 continue;
                             }
 
-                            // Show the generated details
                             System.out.println("Message ID generated: " + msg.getMessageID());
-                            System.out.println("Message Hash: " + msg.getMessageHash());
+                            System.out.println("Message Hash: "         + msg.getMessageHash());
 
-                            // Ask what to do with the message
                             System.out.println("\nWhat would you like to do with this message?");
                             System.out.println("1) Send Message");
                             System.out.println("2) Disregard Message");
@@ -120,33 +119,99 @@ public class RegistrationApp {
                             String sendResult = msg.sentMessage(sendChoice);
                             System.out.println(sendResult);
 
-                            // If stored, also write to JSON
                             if (sendChoice == 3) {
                                 msg.storeMessage();
                             }
 
-                            // Display full message details
                             System.out.println("\n--- Message Details ---");
-                            System.out.println("Message ID: " + msg.getMessageID());
+                            System.out.println("Message ID: "   + msg.getMessageID());
                             System.out.println("Message Hash: " + msg.getMessageHash());
-                            System.out.println("Recipient: " + msg.getRecipientCell());
-                            System.out.println("Message: " + msg.getMessageText());
+                            System.out.println("Recipient: "    + msg.getRecipientCell());
+                            System.out.println("Message: "      + msg.getMessageText());
                         }
-
-                        // After all messages, show total sent
                         System.out.println("\nTotal number of messages sent: " + Message.getTotalMessagesSent());
 
+                    // --------------------------------------------------------
+                    // Option 2: Show recently sent messages
+                    // --------------------------------------------------------
                     } else if (menuChoice == 2) {
-                        System.out.println("Coming Soon.");
+                        // Create a temporary Message to call printMessages()
+                        if (Message.getAllMessages().isEmpty()) {
+                            System.out.println("No messages to display yet.");
+                        } else {
+                            Message temp = new Message(0, "+27000000000", "temp");
+                            System.out.println(temp.printMessages());
+                        }
 
+                    // --------------------------------------------------------
+                    // Option 3: Stored Messages (Part 3 - sub-menu a-f)
+                    // --------------------------------------------------------
                     } else if (menuChoice == 3) {
+                        int storedMenuChoice = 0;
+                        do {
+                            System.out.println();
+                            System.out.println("--- Stored Messages Menu ---");
+                            System.out.println("a) Display sender and recipient of all stored messages");
+                            System.out.println("b) Display the longest stored message");
+                            System.out.println("c) Search by message ID");
+                            System.out.println("d) Search by recipient");
+                            System.out.println("e) Delete a message using message hash");
+                            System.out.println("f) Display sent messages report");
+                            System.out.println("0) Back to main menu");
+                            System.out.print("Enter your choice: ");
+                            String subChoice = input.nextLine().trim().toLowerCase();
+
+                            switch (subChoice) {
+                                case "a":
+                                    System.out.println(Message.displayStoredSendersAndRecipients(senderDisplay));
+                                    break;
+
+                                case "b":
+                                    System.out.println(Message.getLongestStoredMessage());
+                                    break;
+
+                                case "c":
+                                    System.out.print("Enter message ID to search: ");
+                                    String searchID = input.nextLine().trim();
+                                    System.out.println(Message.searchByMessageID(searchID));
+                                    break;
+
+                                case "d":
+                                    System.out.print("Enter recipient cell number to search: ");
+                                    String searchRecipient = input.nextLine().trim();
+                                    System.out.println(Message.searchByRecipient(searchRecipient));
+                                    break;
+
+                                case "e":
+                                    System.out.print("Enter message hash to delete: ");
+                                    String deleteHash = input.nextLine().trim();
+                                    System.out.println(Message.deleteByHash(deleteHash));
+                                    break;
+
+                                case "f":
+                                    System.out.println(Message.displaySentReport());
+                                    break;
+
+                                case "0":
+                                    storedMenuChoice = -1; // trigger exit
+                                    break;
+
+                                default:
+                                    System.out.println("Invalid option. Please enter a, b, c, d, e, f, or 0.");
+                            }
+                        } while (storedMenuChoice != -1);
+
+                    // --------------------------------------------------------
+                    // Option 4: Quit
+                    // --------------------------------------------------------
+                    } else if (menuChoice == 4) {
                         System.out.println("Goodbye!");
 
                     } else {
-                        System.out.println("Invalid option, please enter 1, 2, or 3.");
+                        System.out.println("Invalid option, please enter 1, 2, 3, or 4.");
                     }
 
-                } while (menuChoice != 3);
+                } while (menuChoice != 4);
             }
         }
 
